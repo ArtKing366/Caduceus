@@ -1,0 +1,36 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: caduceus_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: caduceus_db
+      POSTGRES_USER: caduceus
+      POSTGRES_PASSWORD: caduceus_dev_password
+    ports:
+      - "5434:5432"
+    volumes:
+      - caduceus_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U caduceus -d caduceus_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: caduceus_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - caduceus_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  caduceus_postgres_data:
+  caduceus_redis_data:
