@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 
 from app.core.config import settings
+from app.routers.health import router as health_router
 
 app = FastAPI(
     title=settings.app_name,
@@ -8,7 +9,4 @@ app = FastAPI(
     description="Caduceus — intelligent nutrition assistant API",
 )
 
-
-@app.get("/health", tags=["Health"])
-def health_check() -> dict[str, str]:
-    return {"status": "ok", "app": settings.app_name}
+app.include_router(health_router)
