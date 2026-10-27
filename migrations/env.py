@@ -5,7 +5,7 @@ from sqlalchemy import engine_from_config, pool
 
 from app.core.config import settings
 from app.models import *  # noqa: F401,F403 — import models so Alembic can discover metadata
-from app.db.base import Base
+from app.database import Base
 
 config = context.config
 config.set_main_option("sqlalchemy.url", settings.database_url)
