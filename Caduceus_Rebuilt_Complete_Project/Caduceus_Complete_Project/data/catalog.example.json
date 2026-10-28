@@ -1,0 +1,87 @@
+{
+  "restaurants": [
+    {
+      "code": "demo-fit-kitchen",
+      "name": "Demo Fit Kitchen",
+      "description": "Fictional example venue",
+      "category": "healthy",
+      "address": "Example Street 1",
+      "city": "Łódź",
+      "latitude": 51.759,
+      "longitude": 19.456
+    }
+  ],
+  "ingredients": [
+    {
+      "code": "chicken-breast",
+      "name": "Chicken breast",
+      "unit": "g",
+      "calories_per_100": 120,
+      "protein_per_100": 22.5,
+      "fat_per_100": 2.6,
+      "carbs_per_100": 0,
+      "allergens": []
+    }
+  ],
+  "dishes": [
+    {
+      "code": "demo-chicken-rice",
+      "restaurant_code": "demo-fit-kitchen",
+      "name": "Chicken and rice bowl",
+      "category": "main",
+      "price_pln": 28.5,
+      "serving_grams": 400,
+      "calories": 520,
+      "protein": 42,
+      "fat": 12,
+      "carbs": 58,
+      "dietary_tags": [
+        "high-protein"
+      ],
+      "allergens": []
+    }
+  ],
+  "recipes": [
+    {
+      "code": "simple-oats",
+      "name": "Simple oatmeal",
+      "description": "Example recipe",
+      "instructions": [
+        "Mix oats and milk",
+        "Cook until soft"
+      ],
+      "servings": 1,
+      "prep_minutes": 10,
+      "dietary_tags": []
+    }
+  ],
+  "stores": [
+    {
+      "code": "demo-market",
+      "name": "Demo Market",
+      "city": "Łódź"
+    }
+  ],
+  "products": [
+    {
+      "code": "oats-500g",
+      "name": "Oats",
+      "category": "grains",
+      "unit": "g",
+      "pack_quantity": 500,
+      "pack_unit": "g",
+      "calories_per_100": 370,
+      "protein_per_100": 13,
+      "fat_per_100": 7,
+      "carbs_per_100": 59
+    }
+  ],
+  "store_catalog_items": [
+    {
+      "store_code": "demo-market",
+      "product_code": "oats-500g",
+      "price_pln": 5.49,
+      "available": true
+    }
+  ]
+}

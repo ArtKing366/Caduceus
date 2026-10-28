@@ -1,0 +1,8 @@
+Future endpoint contract (not active yet):
+POST /food-scan/analyze
+- multipart image upload
+- authentication required
+- strict size/type validation
+- optional user correction before saving
+- provider API key kept on backend
+- return estimates with confidence/uncertainty, never claim exact calories from image alone
