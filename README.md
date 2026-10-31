@@ -1,387 +1,94 @@
+# Caduceus — Intelligent Nutrition Assistant
 
+Standalone full-stack educational project. It is separate from TaskFlow and does not need files from another repository.
 
-**Задачи**
-
-1. Проверить `DATABASE_URL` в `.env`.
-2. Настроить подключение из `app/database.py`.
-3. Добавить FastAPI dependency для открытия и закрытия DB-сессии.
-4. Добавить тест подключения к PostgreSQL.
-5. Проверить соединение через тест и служебный endpoint/проверку.
-
-**Результат:** приложение безопасно открывает и закрывает сессии и может выполнять запросы к БД.
-
-### Этап 3. Создать основную схему базы данных и Pydantic-схемы
-
-Выполни действия в указанном порядке. Все SQLAlchemy-модели должны находиться в одном `app/models.py`, все Pydantic-схемы — в одном `app/schemas.py`. Не создавай папки `app/models/` и `app/schemas/`.
-
-**3.1. Подготовить SQLAlchemy Base и импорты**
-
-1. В `app/database.py` объяви единый `Base` через `DeclarativeBase`, создай `engine` из `DATABASE_URL` и `SessionLocal`/фабрику сессий.
-2. Убедись, что все модели импортируют один и тот же `Base` из `app/database.py`.
-3. Используй SQLAlchemy 2 style: `Mapped[...]` и `mapped_column(...)`, если проект уже не использует согласованный другой стиль.
-
-**3.2. Создать модели в `app/models.py`**
-
-Создай перечисленные ниже модели и таблицы с первичными ключами `id`, внешними ключами, датами создания там, где они нужны, и явными ограничениями.
-
-1. `User` → `users`: `id`, `email` (unique, indexed), `password_hash`, `display_name` (nullable), `created_at`.
-2. `DietaryPreference` → `dietary_preferences`: `id`, `user_id` → `users.id`, `preference`, `is_strict`, `created_at`; добавь `UniqueConstraint(user_id, preference)`.
-3. `Restaurant` → `restaurants`: `id`, `name`, `address` (nullable), `description` (nullable), `created_at`.
-4. `Dish` → `dishes`: `id`, `restaurant_id` → `restaurants.id` (nullable, если блюдо не относится к конкретному ресторану), `name`, `description`, `category`, известные нутриенты на порцию (nullable), `is_demo`.
-5. `Ingredient` → `ingredients`: `id`, `name` (unique или индекс), `unit`, `calories_per_100g`, `protein_per_100g`, `fat_per_100g`, `carbs_per_100g`, `allergen_info`/структурированные признаки состава (nullable). Нутриенты относятся к 100 г или 100 мл; единицы должны быть согласованы.
-6. `DishIngredient` → `dish_ingredients`: `id`, `dish_id` → `dishes.id`, `ingredient_id` → `ingredients.id`, `quantity`, `unit`.
-7. `Recipe` → `recipes`: `id`, `user_id` → `users.id` (nullable только для seed-рецептов), `title`, `description`, `instructions`, `servings`, `prep_time_minutes`, `source_dish_id` → `dishes.id` (nullable), `created_at`, `updated_at`.
-8. `RecipeIngredient` → `recipe_ingredients`: `id`, `recipe_id` → `recipes.id`, `ingredient_id` → `ingredients.id`, `quantity`, `unit`, необязательные поля для описания замены исходного ингредиента.
-9. `StoreChain` → `store_chains`: `id`, `name`, `slug` (unique), `created_at`. В seed будут сети `Lidl` (`lidl`) и `Biedronka` (`biedronka`).
-10. `Store` → `stores`: `id`, `store_chain_id` → `store_chains.id`, `name`, `address`, `city`, `latitude`, `longitude`, `is_demo`, `created_at`. Координаты обязательны для точек, показываемых на карте; каждая запись представляет конкретную точку магазина.
-11. `Product` → `products`: `id`, `name`, `ingredient_id` → `ingredients.id` (nullable, если точное сопоставление неизвестно), `brand` (nullable), `package_quantity`, `package_unit`, `created_at`.
-12. `StoreCatalogItem` → `store_catalog_items`: `id`, `store_chain_id` → `store_chains.id`, `product_id` → `products.id`, `demo_price` (Numeric/Decimal), `currency`, `availability_status`, `updated_at`, `is_demo`. Добавь уникальность `(store_chain_id, product_id)`, если у сети один общий каталог. Не используй `float` для денег.
-13. `MealEntry` → `meal_entries`: `id`, `user_id` → `users.id`, `recipe_id` → `recipes.id` (nullable), `dish_id` → `dishes.id` (nullable), `eaten_at`, `serving_quantity`, сохранённые на момент записи калории/белки/жиры/углеводы.
-14. `ShoppingList` → `shopping_lists`: `id`, `user_id` → `users.id`, `name`, `created_at`, `updated_at`.
-15. `ShoppingListItem` → `shopping_list_items`: `id`, `shopping_list_id` → `shopping_lists.id`, `product_id` → `products.id` (nullable), `ingredient_id` → `ingredients.id` (nullable), `quantity`, `unit`, `is_purchased`. Поддержи позицию, для которой товар ещё не подобран.
-16. `FoodScanSession` → `food_scan_sessions`: `id`, `user_id` → `users.id`, `status`, безопасный путь/идентификатор временного изображения, структурированный `ai_result`, `created_at`, `confirmed_at` (nullable).
-
-17. Не добавляй `recipe_embeddings` и тип `vector` в базовую миграцию. Таблицу embeddings и `pgvector` подключай отдельным этапом после проверки совместимости PostgreSQL-образа.
-18. Настрой нужные `relationship()`, индексы, `nullable`, `ondelete` и уникальные ограничения. Пользовательские записи должны быть связаны с владельцем.
-19. Проверь, что `import app.models` проходит без ошибок и все модели используют один `Base`.
-
-**3.3. Создать Pydantic-схемы в `app/schemas.py`**
-
-1. Для пользователя создай схемы регистрации, входа, обновления профиля и ответа. Никогда не включай `password_hash` в ответ.
-2. Для ресторанов и блюд создай схемы создания/обновления/ответа; ответ блюда может включать известные ингредиенты и пищевые данные.
-3. Для рецептов создай схемы запроса генерации, ингредиента рецепта, результата генерации, сохранения, обновления и ответа.
-4. Для предпочтений создай схемы добавления, изменения и ответа, включая `is_strict`.
-5. Для магазинов создай схему точки с ID, названием сети, адресом, координатами и `is_demo`.
-6. Для поиска магазинов создай схему ответа с `latitude`, `longitude`, `radius_meters` и массивом точек, где у каждой точки есть `distance_meters`.
-7. Для каталога создай схему товара с названием, ингредиентом (если сопоставлен), размером упаковки, `demo_price`, валютой, `availability_status` и признаком демонстрационных данных.
-8. Для списков покупок создай схемы списка, позиции, изменения количества/статуса и результата расчёта корзины. В результате расчёта различай стоимость используемого количества и сумму покупки целых упаковок.
-9. Для дневника создай схемы добавления/изменения/ответа, содержащие время, порцию и нутриенты.
-10. Для фото-сканирования создай схемы результата AI, исправления пользователем и подтверждения результата.
-11. Используй `ConfigDict(from_attributes=True)` для схем, читающих ORM-объекты. Добавь проверки диапазона широты (-90..90), долготы (-180..180), радиуса (1..10000 м), положительного количества и неотрицательной цены.
-12. Проверь, что импорт `app.schemas` проходит без ошибок.
-
-**3.4. Настроить Alembic и применить миграцию**
-
-1. Настрой `alembic/env.py`, чтобы импортировались `Base.metadata` и модели из `app/models.py`.
-2. Убедись, что Alembic получает URL из `DATABASE_URL`.
-3. Создай миграцию: `py -m alembic revision --autogenerate -m "create core schema"`.
-4. Открой файл миграции и вручную проверь таблицы, типы, ключи, ограничения и порядок операций.
-5. Удали из базовой миграции любые случайные `CREATE EXTENSION vector`.
-6. Примени миграцию: `py -m alembic upgrade head`.
-7. Проверь `py -m alembic current` и наличие таблиц в PostgreSQL.
-
-**Проверка готовности этапа**
-- Все 16 базовых моделей находятся в `app/models.py`; все API-схемы — в `app/schemas.py`.
-- Миграция создаёт схему на чистой базе.
-- `store_chains`, `stores`, `products` и `store_catalog_items` позволяют связать конкретную точку магазина с каталогом её сети.
-- Основная схема запускается без pgvector.
-
-### Этап 4. Подготовить повторно запускаемые демонстрационные данные
-
-**Действия**
-
-1. Создай `scripts/seed_data.py` (или используй уже существующий seed-скрипт, не создавая дубликат).
-2. Подключи скрипт к `DATABASE_URL` и используй SQLAlchemy-сессию.
-3. Добавь две сети в `store_chains`: `Lidl` со `slug="lidl"` и `Biedronka` со `slug="biedronka"`. Используй `get-or-create`/проверку уникального `slug`, чтобы повторный запуск не создавал дубликаты.
-4. Добавь несколько демонстрационных точек в выбранном тестовом городе. Для каждой точки укажи `store_chain_id`, название, адрес, город, широту, долготу и `is_demo=True`. Не используй случайные координаты и не представляй тестовые точки как подтверждённые реальные филиалы.
-5. Добавь в `ingredients` продукты-ингредиенты, необходимые рецептам, и значения калорий, белков, жиров и углеводов на 100 г/мл.
-6. Добавь в `products` нормализованные товары с названием, связью с ингредиентом, количеством в упаковке и единицей измерения. Примеры: молоко 1 л, яйца 10 шт., овсяные хлопья 500 г, рис 1 кг, курица 500 г, томаты 500 г, бананы 1 кг.
-7. Добавь записи `store_catalog_items` для Lidl. Для каждого товара укажи `store_chain_id`, `product_id`, демонстрационную цену в PLN, статус условной доступности, `is_demo=True` и дату обновления.
-8. Добавь отдельные записи `store_catalog_items` для Biedronka. Цены должны отличаться хотя бы у части товаров, чтобы можно было проверить сравнение корзин. Часть товаров можно намеренно не добавлять в один из каталогов для проверки отсутствующих позиций.
-9. Добавь демонстрационные рестораны, блюда, связи `dish_ingredients`, рецепты и `recipe_ingredients` с реалистичными тестовыми количествами.
-10. Учитывай внешние ключи: сначала добавляй сети и ингредиенты, затем товары и магазины, после этого позиции каталогов и связанные рецепты/блюда.
-11. Оберни изменения в транзакцию; при ошибке не оставляй половину seed-данных.
-12. Сделай seed идемпотентным через уникальные идентификаторы/slug и поиск существующих записей.
-13. Запусти `py -m scripts.seed_data` или согласованную команду для файла и исправь ошибки импорта/подключения.
-14. Проверь запросами к БД, что есть две сети, несколько точек с координатами, продукты и отдельные каталоги Lidl/Biedronka.
-
-**Проверка готовности**
-- Повторный запуск не создаёт дубликаты.
-- В тестовой БД есть точки магазинов с координатами и демонстрационные каталоги, привязанные к соответствующим сетям.
-- Цены и доступность обозначены как демонстрационные, а не реальные данные магазинов.
+## Included
 
-### Этап 5. Реализовать регистрацию и профиль
+- **Web:** React + TypeScript + Vite, responsive UI, Leaflet/OpenStreetMap map and browser geolocation.
+- **API:** Python 3.12, FastAPI, Pydantic v2, SQLAlchemy 2, JWT auth, Argon2 password hashing, Alembic migrations.
+- **Database:** PostgreSQL 16. The initial migration creates the 15 core tables for users, dietary preferences, restaurants, dishes, ingredients, dish ingredients, recipes, recipe ingredients, stores, products, store catalogue/prices, meal diary, shopping lists/items, and food-photo scan sessions.
+- **Food diary:** manual meal logging and daily calorie/macronutrient totals.
+- **Restaurant explorer:** restaurant/dish search, coordinates, map markers, and nearby lookup. The catalogue starts empty until data is imported.
+- **Recipes and groceries:** recipe and ingredient models/API, shopping lists, store/product/price models.
+- **AI food photo scan:** optional server-side OpenAI vision integration. The user must review/correct estimates before saving them to the diary. Requires `OPENAI_API_KEY`; without it the rest of the app still runs.
+- **Mobile:** Expo/React Native starter guide; the current runnable client is the web frontend.
+- **Tests:** API smoke test; API docs at `/docs`.
 
-**Задачи**
+**Data scope:** there is intentionally no fabricated bulk database of Łódź restaurants, Biedronka/Dino products or prices. The app supports importing your own catalogue JSON; example format is in `data/catalog.example.json`. The database starts with schema, not a large fake dataset. Real store/restaurant data needs a reliable source and should not be presented as live pricing without verification.
 
-1. Создать Pydantic-схемы пользователя.
-2. Реализовать регистрацию и вход.
-3. Добавить безопасное хеширование и проверку паролей.
-4. Реализовать JWT.
-5. Реализовать получение текущего пользователя, например `GET /auth/me`.
-6. Реализовать получение и изменение профиля.
-7. Реализовать чтение и редактирование пищевых предпочтений.
-8. Защитить endpoints: пользователь получает доступ только к своим данным.
-9. Написать тесты регистрации, входа, токенов и прав доступа.
+## Start on Windows
 
-**Результат:** пользователь может зарегистрироваться, войти и хранить личные настройки.
+Requirements: Docker Desktop running, Docker Compose v2.
 
-### Этап 6. Реализовать Restaurant Explorer
+1. Extract this ZIP into a new folder.
+2. Open CMD in the folder containing `docker-compose.yml`.
+3. Create local env file:
+   ```cmd
+   copy .env.example .env
+   ```
+4. Start the whole stack:
+   ```cmd
+   docker compose up --build
+   ```
+   First build may take several minutes while Docker downloads base images and installs dependencies.
+5. Open:
+   - Web UI: http://localhost:5173
+   - API docs: http://localhost:8000/docs
+   - API health: http://localhost:8000/health
+   - PostgreSQL port on host: `localhost:5434`
 
-**Задачи**
+Compose starts PostgreSQL, waits for its health check, applies Alembic migrations, starts FastAPI, waits for the API health check, then starts the web UI. The web service is called `web`, but its source folder is `frontend`; the API source folder is `backend`.
 
-1. Реализовать список и поиск ресторанов.
-2. Реализовать поиск блюд по названию и категории.
-3. Реализовать карточку блюда с доступной информацией о составе.
-4. Добавить фильтрацию по известным категориям и пищевым предпочтениям.
-5. Подключить endpoints к демонстрационным данным.
-6. Добавить тесты поиска и получения блюда.
+## If Docker fails
 
-**Результат:** пользователь находит ресторанное блюдо и открывает его карточку.
+Run these from the project root and share the **first actual ERROR block** if it fails:
 
-### Этап 7. Реализовать генерацию домашних рецептов
+```cmd
+docker compose config
+docker compose build --no-cache web
+docker compose build --no-cache api
+docker compose up
+```
 
-**Задачи**
+The frontend uses pinned package versions rather than `latest` and a current Node base image/npm to avoid resolving an unpredictable dependency tree. Do not delete the PostgreSQL volume just to rebuild images.
 
-1. Создать отдельный `OpenAIService`, читающий ключ из `.env`.
-2. Определить структурированную Pydantic-схему рецепта.
-3. Реализовать создание домашнего рецепта из выбранного блюда или запроса пользователя.
-4. Передавать AI только необходимые сведения о блюде, ингредиентах и ограничениях пользователя.
-5. Валидировать ответ AI схемой.
-6. Проверять разумность порций, количества и единиц измерения.
-7. Сохранять подтверждённый рецепт и его ингредиенты в PostgreSQL.
-8. Реализовать просмотр, редактирование и сохранение рецепта.
-9. Обрабатывать тайм-ауты, ошибки API и некорректные ответы.
-10. Тестировать через mock-ответы, не расходуя API-кредиты в обычных тестах.
+## Data persistence and reset
 
-**Результат:** пользователь может получить, проверить и сохранить домашний рецепт.
+- `docker compose down` stops/removes containers but preserves the named PostgreSQL volume.
+- `docker compose down -v` deletes the database volume and all data. Only use this if you explicitly want a database reset.
+- To inspect logs: `docker compose logs -f api`, `docker compose logs -f web`, `docker compose logs -f db`.
 
-### Этап 8. Реализовать пищевые ограничения и замену ингредиентов
+## AI photo scan setup
 
-**Задачи**
+Open `.env` and set `OPENAI_API_KEY` to your own key. The key is read only by the backend; do not put it in frontend source. Rebuild/restart the API after changing env:
 
-1. Реализовать фильтры Vegan, Gluten-free, Dairy-free, Nut-free, High-protein, Budget-friendly и Low prep time.
-2. Разделить мягкие предпочтения и строгие ограничения/аллергии.
-3. Проверять известные ингредиенты и составы по структурированным данным.
-4. Использовать состояния «подходит», «не подходит» и «недостаточно информации».
-5. Не подтверждать безопасность при строгой аллергии, если состав неизвестен.
-6. Реализовать предложения AI по замене ингредиента.
-7. Проверять замену до применения.
-8. Пересчитывать пищевую ценность и стоимость рецепта после замены.
-9. Добавить тесты для запрещённых ингредиентов, неизвестного состава и корректных замен.
-
-**Результат:** замены проходят проверки перед тем, как будут применены.
-
-### Этап 9. Реализовать расчёты питания и Smart Grocery
-
-**Задачи**
+```cmd
+docker compose up --build -d api
+```
 
-1. Рассчитывать нутриенты по количеству ингредиентов.
-2. Рассчитывать значения для всего рецепта и одной порции.
-3. Реализовать режимы Budget / Standard / Premium.
-4. Подбирать товары из демонстрационных каталогов сетей.
-5. Сопоставлять товары с ингредиентами, учитывая единицы и размеры упаковки.
-6. Рассчитывать стоимость использованного количества: `цена упаковки × использованное количество / количество в упаковке`.
-7. Отдельно считать стоимость покупки целых упаковок.
-8. Сравнивать стоимость списка покупок по демонстрационным каталогам Lidl и Biedronka.
-9. Создавать список покупок из рецепта.
-10. Реализовать изменение количества, удаление позиции и отметку «куплено».
-11. Добавить тесты расчётов, сопоставления продуктов и сравнения цен.
-
-**Результат:** пользователь видит пищевую ценность, примерную стоимость приготовления и оценку суммы покупки целых упаковок.
-
-### Этап 10. Реализовать backend поиска магазинов поблизости
-
-**Задачи backend**
-
-1. Реализовать endpoint `GET /stores/nearby` с параметрами координат и радиуса.
-2. Рассчитывать расстояние между координатами пользователя и демонстрационными точками.
-3. Возвращать только магазины, которые находятся в радиусе.
-4. Сортировать результаты по расстоянию.
-5. Реализовать получение точки магазина и её сети.
-6. Реализовать загрузку каталога выбранной сети.
-7. Реализовать расчёт стоимости списка покупок для выбранной точки/сети.
-8. Добавить тесты нулевого радиуса, разных радиусов, отсутствия результатов и координат.
-
-**Результат:** backend умеет возвращать ближайшие демонстрационные точки, определять сеть выбранного магазина и загружать её каталог. Подключение карты и управления радиусом в пользовательском интерфейсе выполняется на этапе 14.
-
-### Этап 11. Реализовать Food Tracker
-
-**Задачи**
-
-1. Реализовать ручное добавление записи питания.
-2. Позволить выбирать блюдо/рецепт и количество съеденного.
-3. Сохранять значения нутриентов на момент добавления записи.
-4. Реализовать редактирование и удаление своих записей.
-5. Реализовать дневные итоги калорий, белков, жиров и углеводов.
-6. Реализовать историю по датам.
-7. Добавить тесты порций, дневных итогов и доступа к записям.
+Authenticated endpoint: `POST /food-scan/analyze` (multipart form field `image`), then review the estimate and submit corrections to `POST /food-scan/{scan_id}/confirm`. Accepted image types: JPEG, PNG, WebP; maximum 8 MB. Estimates are not medical advice or exact nutrition measurements.
 
-**Результат:** пользователь ведёт дневник питания.
-
-### Этап 12. Реализовать сканирование еды по фотографии
-
-**Задачи**
-
-1. Создать `POST /food-scans` для загрузки фотографии.
-2. Ограничить типы и размер файла и проверять фактический формат.
-3. Организовать временное хранение изображения и метаданных.
-4. Передавать изображение в OpenAI API.
-5. Валидировать структурированный ответ и сохранять его со статусом «ожидает подтверждения».
-6. Показывать предполагаемое блюдо, состав и пищевую ценность как предварительные данные.
-7. Давать пользователю возможность исправить название, состав и порцию.
-8. Подтверждать результат отдельным запросом.
-9. Создавать `meal_entries` только после подтверждения пользователя.
-10. При ошибке AI или плохом изображении предлагать ручной ввод.
-11. Не использовать результат распознавания как подтверждение безопасности при аллергии.
-12. Написать тесты загрузки, ошибки API, редактирования и подтверждения.
+## Importing catalogue data
 
-**Результат:** фотография помогает заполнить дневник, но пользователь контролирует итоговую запись.
+See `data/README.md`. The import endpoint is authenticated. Use stable unique `code` fields and test imports with a small file first. Do not upload untrusted JSON.
 
-### Этап 13. Добавить Redis, Celery и RAG
+## Run backend outside Docker
 
-**Задачи**
+Use Python 3.12 and a reachable PostgreSQL instance. In Windows CMD:
 
-1. Определить, какие операции требуют Redis и фонового выполнения.
-2. Настроить Redis и Celery worker.
-3. Перенести долгие AI-операции в фоновые задачи, если это улучшает UX.
-4. Настроить pgvector только в окружении PostgreSQL, которое поддерживает это расширение.
-5. Генерировать embeddings для выбранных описаний блюд, рецептов и ингредиентов.
-6. Реализовать семантический поиск похожих блюд/рецептов.
-7. Передавать найденные записи в контекст AI-генерации.
-8. Проверить сбои worker, повторные задачи и очистку временных данных.
-
-**Результат:** фоновые задачи и семантический поиск интегрированы. RAG не заменяет структурированные проверки состава, цен и ограничений.
-
-### Этап 14. Завершить веб-интерфейс
-
-**Технологии:** React + TypeScript.
-
-**Задачи**
-
-1. Настроить frontend, маршрутизацию и общие компоненты.
-2. Создать страницы регистрации, входа и профиля.
-3. Создать главную страницу с последними приёмами пищи.
-4. Реализовать Food Tracker, дневные итоги и историю.
-5. Реализовать фото-сканирование, исправление и подтверждение результата.
-6. Создать каталог ресторанов и страницы блюд.
-7. Создать экран рецепта с шагами, ингредиентами и порциями.
-8. Создать интерфейс замен ингредиентов и режимов Budget / Standard / Premium.
-9. Завершить Smart Grocery: список покупок, стоимость и сравнение магазинов.
-10. Добавить карту магазинов, маркеры, радиус, расстояния и карточки каталога выбранной сети.
-11. Создать настройки пищевых предпочтений и ограничений.
-12. Обработать загрузку, ошибки, отсутствие результатов и отказ в геолокации.
-13. Проверить адаптивность для мобильного браузера.
-
-**Результат:** все основные возможности доступны из единого веб-интерфейса.
-
-### Этап 15. Полное тестирование и исправления
-
-**Задачи**
-
-1. Запустить полный набор Pytest.
-2. Проверить регистрацию, вход и права доступа.
-3. Проверить каталог, генерацию рецептов и сохранение рецептов.
-4. Проверить ограничения и замены ингредиентов.
-5. Проверить нутриенты, размеры упаковок и расчёты стоимости.
-6. Проверить списки покупок и Food Tracker.
-7. Проверить полный сценарий фото-сканирования.
-8. Проверить поиск ближайших магазинов для разных координат и радиусов.
-9. Проверить, что выбранный Lidl загружает каталог Lidl, а выбранная Biedronka — каталог Biedronka.
-10. Проверить сравнение корзины, отсутствующие товары и пустую выдачу.
-11. Проверить отказ в геолокации и ручной выбор местоположения.
-12. Проверить ошибки OpenAI API, Redis и Celery.
-13. Пройти основные пользовательские сценарии через браузер.
-14. Исправить ошибки и повторить тесты.
-
-**Результат:** ключевые backend- и frontend-сценарии проходят автоматическую и ручную проверку.
-
-### Этап 16. Подготовить деплой
-
-**Задачи**
-
-1. Добавить production Dockerfile для backend и инструкции сборки frontend.
-2. Подготовить production-конфигурацию без секретов в репозитории.
-3. Настроить GitHub Actions для установки зависимостей и запуска проверок/тестов.
-4. Выбрать хостинг для backend, frontend и PostgreSQL.
-5. Настроить секреты, миграции и резервное копирование БД.
-6. Настроить домен, HTTPS/SSL и Nginx, если требуется выбранной инфраструктурой.
-7. Развернуть приложение и проверить `/health`, API и интерфейс.
-8. Проверить логи, перезапуск и восстановление после ошибок.
-
-**Результат:** Caduceus развёрнут, а изменения проходят автоматизированные проверки.
-
-### Этап 17. Мобильная версия
-
-После стабилизации веб-приложения:
-
-1. Повторно использовать существующий FastAPI backend.
-2. Создать мобильный интерфейс на React Native.
-3. Реализовать вход, Food Tracker, каталог, рецепты, фото-сканирование и списки покупок.
-4. Добавить карту, поиск магазинов по радиусу и переход к каталогу выбранной сети.
-5. Проверить разрешения камеры/фото и геолокации, а также ошибки сети.
-
-**Результат:** мобильный клиент использует те же аккаунты и backend, что и веб-версия.
-
-## 9. Команды для ежедневной работы в Windows
-
-### Активировать окружение
-
-```bat
+```cmd
+cd backend
+py -m venv .venv
 .venv\Scripts\activate
-```
-
-### Запустить PostgreSQL и Redis
-
-```bat
-docker compose up -d
-docker compose ps
-```
-
-### Запустить FastAPI
-
-```bat
+py -m pip install -r requirements.txt
+set DATABASE_URL=postgresql+psycopg://caduceus:change_me_local@localhost:5434/caduceus
+set SECRET_KEY=replace_this_with_a_long_random_secret
+py -m alembic upgrade head
 py -m uvicorn app.main:app --reload
 ```
 
-### Открыть API
+For frontend-only development, run `npm install` then `npm run dev` from `frontend`. Use `VITE_API_URL` to point at the API.
 
-- Swagger: `http://127.0.0.1:8000/docs`
-- Health check: `http://127.0.0.1:8000/health`
+## Current scope and next stages
 
-### Создать и применить миграции
-
-```bat
-py -m alembic revision --autogenerate -m "describe schema change"
-py -m alembic upgrade head
-```
-
-Перед применением всегда проверяй автоматически созданный файл миграции. Если миграция включает `CREATE EXTENSION vector`, убедись, что используемый PostgreSQL-образ поддерживает `pgvector`; иначе не добавляй этот шаг в базовую миграцию.
-
-### Запустить тесты
-
-```bat
-py -m pytest
-```
-
-## 10. Критерии готовности MVP
-
-MVP можно считать готовым, когда:
-
-- пользователь может зарегистрироваться и работать со своими данными;
-- Food Tracker считает и показывает дневную пищевую ценность;
-- пользователь может искать демонстрационные блюда, создавать рецепт и заменять ингредиенты;
-- Smart Grocery собирает список покупок и рассчитывает стоимость использованного количества и целых упаковок;
-- карта показывает демонстрационные точки магазинов из базы;
-- пользователь может задать местоположение и радиус, например 300 м или 10 км;
-- backend корректно возвращает точки, попадающие в радиус, отсортированные по расстоянию;
-- выбор Lidl загружает тестовый каталог Lidl, а выбор Biedronka — тестовый каталог Biedronka;
-- цены и доступность чётко обозначены как демонстрационные;
-- пользователь может сравнить примерную стоимость корзины в нескольких магазинах;
-- ошибки, пустые результаты и отказ от геолокации обрабатываются без поломки интерфейса;
-- тесты проходят, а инструкция по запуску актуальна.
-
-## 11. Ограничения первой версии
-
-1. Каталоги Lidl, Biedronka и других сетей являются собственными демонстрационными наборами, а не копиями закрытых внутренних баз.
-2. Показанные магазины берутся из таблицы `stores`. Приложение не обнаруживает автоматически все реальные магазины города, если они не внесены в демонстрационные данные.
-3. Цены и наличие товаров не являются текущими ценами или подтверждением наличия в реальном филиале.
-4. Чтобы позже показывать актуальные точки, цены или наличие, потребуется отдельно подключить подходящие внешние источники и соблюдать их условия использования.
-5. Пищевая ценность AI-оценки фотографии предварительная и требует подтверждения пользователя.
-6. Информация о неизвестном составе не должна считаться гарантией безопасности для людей с аллергией.
-
-## 12. Текущий статус и следующий шаг
-
-**Перед продолжением проверь фактическое состояние файлов проекта, миграций, окружения и контейнеров — не считай этап завершённым только потому, что он описан в README.
-
-**Следующее действие:** проверь соединение FastAPI с PostgreSQL и состояние миграций. Затем выполни незавершённые пункты этапа 3: модели в `app/models.py`, схемы в `app/schemas.py` и проверенная базовая миграция. После этого заполни БД демонстрационными данными и реализуй backend поиска магазинов. Интерфейс карты подключай только после того, как endpoint поиска и загрузка каталога выбранной сети проходят тесты.
+The base application is implemented as a runnable starter, not a fully populated production service. Next stages can add a vetted Łódź restaurant dataset, verified store/product prices, richer recipe costing (used quantity vs whole pack), pgvector/RAG, Redis/Celery, mobile app screens, and production deployment with HTTPS, backups, rate limiting and monitoring. pgvector is deliberately not enabled in the initial migration, so a plain PostgreSQL 16 image works out of the box.

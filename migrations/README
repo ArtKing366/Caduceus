@@ -1,1 +1,0 @@
-Alembic migration scripts will be stored in this directory after `alembic init migrations` is configured.
