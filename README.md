@@ -92,3 +92,4 @@ For frontend-only development, run `npm install` then `npm run dev` from `fronte
 ## Current scope and next stages
 
 The base application is implemented as a runnable starter, not a fully populated production service. Next stages can add a vetted Łódź restaurant dataset, verified store/product prices, richer recipe costing (used quantity vs whole pack), pgvector/RAG, Redis/Celery, mobile app screens, and production deployment with HTTPS, backups, rate limiting and monitoring. pgvector is deliberately not enabled in the initial migration, so a plain PostgreSQL 16 image works out of the box.
+S
