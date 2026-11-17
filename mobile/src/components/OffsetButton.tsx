@@ -9,11 +9,13 @@ import {
 type OffsetButtonProps = {
   title: string;
   onPress: () => void;
+  compact?: boolean;
 };
 
 export default function OffsetButton({
   title,
   onPress,
+  compact = false,
 }: OffsetButtonProps) {
   return (
     <Pressable
@@ -32,10 +34,19 @@ export default function OffsetButton({
           <View
             style={[
               styles.button,
+              compact && styles.compactButton,
               pressed && styles.buttonPressed,
             ]}
           >
-            <Text style={styles.buttonText}>
+            <Text
+              style={[
+                styles.buttonText,
+                compact && styles.compactButtonText,
+              ]}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.85}
+            >
               {title}
             </Text>
           </View>
@@ -80,6 +91,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
 
+  compactButton: {
+    minHeight: 42,
+    paddingVertical: 9,
+    paddingHorizontal: 5,
+    borderRadius: 20,
+  },
+
   buttonPressed: {
     transform: [{ translateY: -1 }],
   },
@@ -89,5 +107,9 @@ const styles = StyleSheet.create({
     fontFamily: 'ClashDisplay-Bold',
     fontSize: 15,
     textAlign: 'center',
+  },
+
+  compactButtonText: {
+    fontSize: 11,
   },
 });

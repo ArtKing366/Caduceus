@@ -26,7 +26,117 @@ Caduceus/
 
 ## Mobile application
 
-The native mobile application is located in `mobile/`. It is built with Expo and React Native and uses a screen-based navigation structure.
+The native mobile application is located in `mobile/`. It is built with Expo, React Native and TypeScript, with React Navigation used for screen-based navigation.
+
+### Running the mobile application
+
+Requirements:
+- Node.js and npm.
+- Expo Go on your mobile device, or an appropriate development build.
+
+Open a terminal in the project root and run:
+
+```bash
+cd mobile
+npm install
+npx expo start
+```
+
+Scan the QR code using Expo Go.
+
+If the local network connection does not work, try:
+
+```bash
+npx expo start --tunnel
+```
+
+### Mobile application screens and navigation
+
+The mobile application includes the following screens and user flows:
+
+**Onboarding and preferences**
+- Welcome
+- Registration
+- Dietary Preferences
+- Limitations
+
+**Nutrition tracking**
+- Dashboard
+- Camera
+- Ingredient Entry
+- Macro Summary
+
+**Recipes and cooking**
+- Restaurant Search
+- Restaurant Menu
+- Dish Details
+- Cooking Instructions
+
+**Ingredient shopping**
+- Ingredient Stores
+- Store Options
+
+**Settings and account preferences**
+- Settings
+- Security & Privacy
+- Personal Information
+- Daily Goals
+- Preference Settings
+
+The screens are connected through a typed React Navigation stack. Bottom navigation provides access to the main application sections.
+
+### Mobile source code
+
+| Location | Responsibility |
+|---|---|
+| `mobile/App.tsx` | Loads custom fonts and initializes the application. |
+| `mobile/src/navigation/AppNavigator.tsx` | Registers application screens and navigation routes. |
+| `mobile/src/screens/` | Contains the individual application screens. |
+| `mobile/src/components/` | Reusable interface components. |
+| `mobile/src/types/` | TypeScript types for navigation and nutrition data. |
+| `mobile/assets/fonts/` | Clash Display font files. |
+| `mobile/assets/images/` | Illustrations, icons and application images. |
+
+### Reusable components
+
+- `PrimaryButton` — general-purpose primary button.
+- `OffsetButton` — button with a decorative offset background.
+- `SaveRecipeButton` — recipe-saving interface.
+- `PreferenceContinueButton` — button used in dietary preference selection.
+- `PreferencePill` — selectable dietary preference.
+- `PreferenceToggle` — preference selection control.
+- `PasswordInput` — password input component.
+- `IngredientInput` — ingredient entry field.
+
+### Current mobile implementation status
+
+Implemented:
+- Expo and React Native project setup.
+- Custom Clash Display typography.
+- Onboarding and registration interfaces.
+- Dietary preferences and limitations screens.
+- Dashboard interface and bottom navigation.
+- Camera permission handling, photo capture and preview.
+- Manual ingredient entry interface.
+- Macro summary interface.
+- Recipe discovery and menu interfaces.
+- Dish details and cooking instructions.
+- Ingredient store and store selection interfaces.
+- Settings, security and personal information screens.
+- Daily goals interface.
+- Typed navigation between application screens.
+
+**Current limitations:**
+
+The mobile application is currently a frontend prototype. Several interfaces are implemented, but not all features are connected to backend services or persistent storage.
+
+- Macro values are currently preview/sample data rather than results from a complete nutrition calculation.
+- Food recognition is not yet connected to a complete AI analysis workflow.
+- Account information and daily goals are not yet saved to a backend.
+- Recipe saving and user preference synchronization are not yet persistent.
+- Store and product information requires verified catalogue data and integration.
+
+
 
 ### Running the mobile application
 

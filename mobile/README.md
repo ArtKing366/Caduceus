@@ -1,29 +1,158 @@
-# Caduceus Mobile — Expo / React Native starter
+# Caduceus Mobile
 
-This folder is a preparation guide, not a complete built mobile app yet. The recommended approach is to create the Expo app here and use the same FastAPI backend as the web client.
+A cross-platform nutrition assistant application built with **React Native, Expo and TypeScript**.
 
-## Create the app
+Caduceus helps users explore nutrition information, manage dietary preferences, discover recipes and follow cooking instructions through a mobile interface.
+
+## Technologies
+
+- React Native
+- Expo SDK 58
+- TypeScript
+- React Navigation 7
+- Expo Camera
+- Expo Image Picker
+- Expo Location
+- React Native Maps
+- Clash Display typography
+
+## Features and screens
+
+### Onboarding and preferences
+- Welcome screen
+- User registration interface
+- Dietary preferences
+- Food limitations
+
+### Nutrition tracking
+- Dashboard
+- Camera interface and photo capture
+- Manual ingredient entry
+- Macronutrient summary
+
+### Recipes and cooking
+- Restaurant and recipe discovery
+- Restaurant menu
+- Dish details
+- Step-by-step cooking instructions
+
+### Ingredient shopping
+- Ingredient store information
+- Store options and map interface
+
+### Settings and personalization
+- Settings dashboard
+- Security and privacy
+- Personal information
+- Daily nutrition and water goals
+- Dietary preference settings
+
+## Project structure
+
+```text
+mobile/
+├── assets/
+│   ├── fonts/
+│   └── images/
+├── src/
+│   ├── components/
+│   ├── navigation/
+│   ├── screens/
+│   └── types/
+├── App.tsx
+├── package.json
+└── README.md
+```
+
+## Getting started
+
+### Requirements
+
+- Node.js and npm
+- Expo Go on a compatible mobile device, or an appropriate development build
+
+### Installation
+
 From the repository root:
+
 ```bash
 cd mobile
-npx create-expo-app@latest . --template blank-typescript
-npx expo install expo-location expo-image-picker
+npm install
+```
+
+### Start the application
+
+```bash
 npx expo start
 ```
-If the folder already contains generated Expo files, do not run the create command over them.
 
-## API base URL
-- Android emulator: `http://10.0.2.2:8000`
-- iOS simulator: `http://localhost:8000`
-- Physical phone: `http://YOUR_COMPUTER_LAN_IP:8000` (phone and PC on the same Wi-Fi)
-- HTTPS is recommended for deployed builds.
+Scan the QR code using Expo Go.
 
-## Planned scan flow
-1. Use `expo-image-picker` to take a photo.
-2. Show the photo and allow the user to retake it.
-3. Upload the image to a future authenticated `POST /food-scan/analyze` endpoint.
-4. Backend calls the configured vision model, returns proposed dish/ingredients/portion/macros.
-5. User reviews and edits the estimate.
-6. Confirmed result is saved to `food_scan_sessions` and `meal_entries`.
+If your local network connection does not work:
 
-No AI scan endpoint or API key is included yet. Keep provider API keys on the backend, never in the mobile app.
+```bash
+npx expo start --tunnel
+```
+
+## Navigation
+
+The application uses React Navigation with a typed native stack navigator.
+
+The main navigation connects the dashboard, camera, recipe discovery, dietary preferences and settings sections. Individual screens also provide bottom navigation for moving between application areas.
+
+## Design
+
+The application uses a consistent visual design based on:
+
+- Clash Display custom fonts.
+- Blue primary interface elements.
+- Warm off-white backgrounds.
+- Pale yellow decorative elements.
+- Custom illustrations and image assets.
+- Reusable interface components.
+
+## Backend integration
+
+The mobile application is part of the larger Caduceus project and is intended to communicate with its FastAPI backend.
+
+The planned food scanning workflow is:
+
+1. Capture a food image.
+2. Preview the image.
+3. Upload the image to the backend.
+4. Receive proposed food and nutrition information.
+5. Allow the user to review and correct the result.
+6. Save confirmed information to the user's nutrition history.
+
+Provider API keys must remain on the backend and must never be stored in the mobile application.
+
+## Implementation status
+
+The current mobile application contains the main frontend screens and navigation flows.
+
+Some functionality is still under development:
+
+- Backend authentication and registration.
+- Persistent user preferences and daily goals.
+- Actual nutrition calculations from ingredient quantities.
+- Complete AI-powered food recognition.
+- Persistent recipe saving.
+- Live store and product catalogue integration.
+
+Nutrition summaries currently use preview data and should not be treated as actual nutritional analysis.
+
+## Development
+
+Check TypeScript:
+
+```bash
+npx tsc --noEmit
+```
+
+Start Expo:
+
+```bash
+npx expo start
+```
+
+Build and test the application before committing changes.

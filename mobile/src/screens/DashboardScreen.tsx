@@ -5,26 +5,26 @@ import {
   Image,
   ScrollView,
   StyleSheet,
+  Pressable,
 } from 'react-native';
 
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Pressable } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../types/navigation';
+
 // Dashboard Screen
 export default function DashboardScreen() {
-    const navigation =
-  useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-
         {/* Dashboard title */}
         <Text style={styles.title}>
           Welcome to Caduceus
@@ -32,7 +32,6 @@ export default function DashboardScreen() {
 
         {/* Top widgets */}
         <View style={styles.widgetsRow}>
-
           {/* Calorie widget */}
           <View style={styles.widgetCard}>
             <Image
@@ -70,12 +69,10 @@ export default function DashboardScreen() {
               </Text>
             </View>
           </View>
-
         </View>
 
         {/* Discover banner */}
         <View style={styles.bannerWrapper}>
-
           <View style={styles.blueShadowLayer} />
 
           <View style={styles.bannerCard}>
@@ -86,16 +83,16 @@ export default function DashboardScreen() {
             />
 
             <View style={styles.bannerOverlay}>
-
-              {/* Discover button with blue offset */}
-              <View style={styles.discoverButtonWrapper}>
+              <Pressable
+                onPress={() => navigation.navigate('RestaurantSearch')}
+                style={styles.discoverButtonWrapper}
+              >
                 <View style={styles.discoverButtonShadow} />
 
                 <Text style={styles.discoverButtonText}>
                   Discover your dish
                 </Text>
-              </View>
-
+              </Pressable>
             </View>
           </View>
         </View>
@@ -106,14 +103,11 @@ export default function DashboardScreen() {
         </Text>
 
         <View style={styles.activityList}>
-
           {/* Quark pancakes */}
           <View style={styles.activityWrapper}>
-
             <View style={styles.blueShadowLayer} />
 
             <View style={styles.activityCard}>
-
               <Image
                 source={require('../../assets/images/quark-pancakes.png')}
                 style={styles.foodImage}
@@ -135,17 +129,14 @@ export default function DashboardScreen() {
                 <MacroBadge value="8gr" label="Fat" />
                 <MacroBadge value="5gr" label="Fiber" />
               </View>
-
             </View>
           </View>
 
           {/* Croissant */}
           <View style={styles.activityWrapper}>
-
             <View style={styles.blueShadowLayer} />
 
             <View style={styles.activityCard}>
-
               <Image
                 source={require('../../assets/images/croissant.png')}
                 style={styles.foodImage}
@@ -167,44 +158,39 @@ export default function DashboardScreen() {
                 <MacroBadge value="12gr" label="Fat" />
                 <MacroBadge value="3gr" label="Fiber" />
               </View>
-
             </View>
           </View>
-
         </View>
-
       </ScrollView>
 
       {/* Bottom navigation */}
       <View style={styles.navBarWrapper}>
-
-        {/* Blue extension above navigation */}
         <View style={styles.navBlueLayer} />
 
         <View style={styles.navBar}>
-
-          {/* Nutrition */}
-          <View style={styles.navItem}>
+          {/* Nutrition / Preference Settings */}
+          <Pressable
+            style={styles.navItem}
+            onPress={() => navigation.navigate('PreferenceSettingsScreen')}
+          >
             <Image
               source={require('../../assets/images/leaf.png')}
               style={styles.navIcon}
               resizeMode="contain"
             />
-          </View>
+          </Pressable>
 
           {/* Camera */}
-          <View style={styles.navItem}>
-<Pressable
-  style={styles.navItem}
-  onPress={() => navigation.navigate('Camera')}
->
-  <Image
-    source={require('../../assets/images/camera.png')}
-    style={styles.navIcon}
-    resizeMode="contain"
-  />
-</Pressable>
-          </View>
+          <Pressable
+            style={styles.navItem}
+            onPress={() => navigation.navigate('Camera')}
+          >
+            <Image
+              source={require('../../assets/images/camera.png')}
+              style={styles.navIcon}
+              resizeMode="contain"
+            />
+          </Pressable>
 
           {/* Selected Home */}
           <View style={[styles.navItem, styles.activeHome]}>
@@ -218,30 +204,36 @@ export default function DashboardScreen() {
           </View>
 
           {/* Recipes */}
-          <View style={styles.navItem}>
+          <Pressable
+            style={styles.navItem}
+            onPress={() => navigation.navigate('RestaurantSearch')}
+          >
             <Image
               source={require('../../assets/images/recipes.png')}
               style={styles.navIcon}
               resizeMode="contain"
             />
-          </View>
+          </Pressable>
 
           {/* Settings */}
-          <View style={styles.navItem}>
-            <Image
-              source={require('../../assets/images/settings.png')}
-              style={styles.navIcon}
-              resizeMode="contain"
-            />
-          </View>
-
+<Pressable
+  style={styles.navItem}
+  onPress={() => {
+    console.log('SETTINGS BUTTON PRESSED');
+    navigation.navigate('Settings');
+  }}
+>
+  <Image
+    source={require('../../assets/images/settings.png')}
+    style={styles.navIcon}
+    resizeMode="contain"
+  />
+</Pressable>
         </View>
       </View>
-
     </SafeAreaView>
   );
 }
-
 
 // Reusable macro badge
 function MacroBadge({
@@ -266,10 +258,8 @@ function MacroBadge({
   );
 }
 
-
 // Styles
 const styles = StyleSheet.create({
-
   container: {
     flex: 1,
     backgroundColor: '#FDF8F2',
@@ -285,7 +275,6 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
 
-  // Dashboard title
   title: {
     color: '#2B56D4',
     fontFamily: 'ClashDisplay-Bold',
@@ -293,7 +282,6 @@ const styles = StyleSheet.create({
     marginBottom: 40,
   },
 
-  // Top widgets
   widgetsRow: {
     flexDirection: 'row',
     gap: 12,
@@ -332,7 +320,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
 
-  // Banner
   bannerWrapper: {
     position: 'relative',
     marginTop: 16,
@@ -369,7 +356,6 @@ const styles = StyleSheet.create({
     padding: 12,
   },
 
-  // Discover button
   discoverButtonWrapper: {
     position: 'relative',
     alignSelf: 'flex-start',
@@ -396,7 +382,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
 
-  // Recent activity
   sectionTitle: {
     fontFamily: 'ClashDisplay-Medium',
     fontSize: 18,
@@ -449,7 +434,6 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
 
-  // Macro badges
   macroBadges: {
     flexDirection: 'row',
     gap: 5,
@@ -481,7 +465,8 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
 
-  // Bottom navigation
+  /* BOTTOM NAVIGATION */
+
   navBarWrapper: {
     position: 'relative',
     marginHorizontal: 20,
@@ -489,7 +474,6 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
 
-  // Blue now extends upwards instead of to the right
   navBlueLayer: {
     position: 'absolute',
     top: -8,
@@ -523,10 +507,9 @@ const styles = StyleSheet.create({
     height: 20,
   },
 
-  // Selected home icon
-activeHome: {
-  transform: [{ translateY: -36 }],
-},
+  activeHome: {
+    transform: [{ translateY: -36 }],
+  },
 
   homeBubble: {
     width: 48,
@@ -538,5 +521,4 @@ activeHome: {
     alignItems: 'center',
     justifyContent: 'center',
   },
-
 });

@@ -16,20 +16,23 @@ import {
 } from 'expo-camera';
 
 import { SafeAreaView } from 'react-native-safe-area-context';
+
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../types/navigation';
+
 import OffsetButton from '../components/OffsetButton';
 
 export default function CameraScreen() {
   const cameraRef = useRef<CameraView | null>(null);
 
   const [permission, requestPermission] = useCameraPermissions();
-
   const [cameraReady, setCameraReady] = useState(false);
   const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
+
   const navigation =
-  useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
   async function takePhoto() {
     if (!cameraRef.current || !cameraReady) {
       return;
@@ -94,10 +97,8 @@ export default function CameraScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        {/* Page title */}
         <Text style={styles.title}>Caduceus</Text>
 
-        {/* Camera preview or captured photo */}
         <View style={styles.cameraContainer}>
           {capturedPhoto ? (
             <Image
@@ -115,7 +116,6 @@ export default function CameraScreen() {
           )}
         </View>
 
-        {/* Action buttons */}
         <View style={styles.actionsGroup}>
           {capturedPhoto ? (
             <OffsetButton
@@ -133,7 +133,7 @@ export default function CameraScreen() {
 
               <OffsetButton
                 title="Enter your own ingredients"
-onPress={() => navigation.navigate('IngredientEntry')}
+                onPress={() => navigation.navigate('IngredientEntry')}
               />
             </>
           )}
@@ -145,21 +145,29 @@ onPress={() => navigation.navigate('IngredientEntry')}
         <View style={styles.navBlueLayer} />
 
         <View style={styles.navBar}>
-          <View style={styles.navItem}>
+          {/* Preferences */}
+          <Pressable
+            style={styles.navItem}
+            onPress={() => navigation.navigate('PreferenceSettingsScreen')}
+          >
             <Image
               source={require('../../assets/images/leaf.png')}
               style={styles.navIcon}
               resizeMode="contain"
             />
-          </View>
+          </Pressable>
 
-          <View style={styles.navItem}>
+          {/* Dashboard */}
+          <Pressable
+            style={styles.navItem}
+            onPress={() => navigation.navigate('Dashboard')}
+          >
             <Image
               source={require('../../assets/images/house.png')}
               style={styles.navIcon}
               resizeMode="contain"
             />
-          </View>
+          </Pressable>
 
           {/* Active camera icon */}
           <View style={[styles.navItem, styles.activeCamera]}>
@@ -172,21 +180,29 @@ onPress={() => navigation.navigate('IngredientEntry')}
             </View>
           </View>
 
-          <View style={styles.navItem}>
+          {/* Recipes */}
+          <Pressable
+            style={styles.navItem}
+            onPress={() => navigation.navigate('RestaurantSearch')}
+          >
             <Image
               source={require('../../assets/images/recipes.png')}
               style={styles.navIcon}
               resizeMode="contain"
             />
-          </View>
+          </Pressable>
 
-          <View style={styles.navItem}>
+          {/* Settings */}
+          <Pressable
+            style={styles.navItem}
+            onPress={() => navigation.navigate('Settings')}
+          >
             <Image
               source={require('../../assets/images/settings.png')}
               style={styles.navIcon}
               resizeMode="contain"
             />
-          </View>
+          </Pressable>
         </View>
       </View>
     </SafeAreaView>

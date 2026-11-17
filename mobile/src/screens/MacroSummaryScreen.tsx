@@ -6,6 +6,7 @@ import {
   ImageBackground,
   ScrollView,
   StyleSheet,
+  Pressable,
 } from 'react-native';
 
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -193,26 +194,34 @@ export default function MacroSummaryScreen({
         </View>
       </ScrollView>
 
-      {/* Updated bottom navigation */}
+      {/* Bottom navigation */}
       <View style={styles.navBarWrapper}>
         <View style={styles.navBlueLayer} />
 
         <View style={styles.navBar}>
-          <View style={styles.navItem}>
+          {/* Preferences */}
+          <Pressable
+            style={styles.navItem}
+            onPress={() => navigation.navigate('PreferenceSettingsScreen')}
+          >
             <Image
               source={require('../../assets/images/leaf.png')}
               style={styles.navIcon}
               resizeMode="contain"
             />
-          </View>
+          </Pressable>
 
-          <View style={styles.navItem}>
+          {/* Dashboard */}
+          <Pressable
+            style={styles.navItem}
+            onPress={() => navigation.navigate('Dashboard')}
+          >
             <Image
               source={require('../../assets/images/house.png')}
               style={styles.navIcon}
               resizeMode="contain"
             />
-          </View>
+          </Pressable>
 
           {/* Active camera icon */}
           <View style={[styles.navItem, styles.activeCamera]}>
@@ -225,21 +234,29 @@ export default function MacroSummaryScreen({
             </View>
           </View>
 
-          <View style={styles.navItem}>
+          {/* Recipes */}
+          <Pressable
+            style={styles.navItem}
+            onPress={() => navigation.navigate('RestaurantSearch')}
+          >
             <Image
               source={require('../../assets/images/recipes.png')}
               style={styles.navIcon}
               resizeMode="contain"
             />
-          </View>
+          </Pressable>
 
-          <View style={styles.navItem}>
+          {/* Settings */}
+          <Pressable
+            style={styles.navItem}
+            onPress={() => navigation.navigate('Settings')}
+          >
             <Image
               source={require('../../assets/images/settings.png')}
               style={styles.navIcon}
               resizeMode="contain"
             />
-          </View>
+          </Pressable>
         </View>
       </View>
     </SafeAreaView>
