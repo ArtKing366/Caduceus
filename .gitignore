@@ -20,6 +20,7 @@ ENV/
 htmlcov/
 .mypy_cache/
 .ruff_cache/
+EOF
 
 # IDE / OS
 .vscode/
@@ -39,3 +40,5 @@ uploads/
 
 # Node.js dependencies
 node_modules/
+
+data/*_catalog.json
