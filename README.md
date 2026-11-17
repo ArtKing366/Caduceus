@@ -1,95 +1,230 @@
 # Caduceus — Intelligent Nutrition Assistant
 
-Standalone full-stack educational project. It is separate from TaskFlow and does not need files from another repository.
+Caduceus is a standalone full-stack nutrition assistant project. It includes a web application, a native mobile application, a backend API and a PostgreSQL database.
 
-## Included
+## Project structure
 
-- **Web:** React + TypeScript + Vite, responsive UI, Leaflet/OpenStreetMap map and browser geolocation.
-- **API:** Python 3.12, FastAPI, Pydantic v2, SQLAlchemy 2, JWT auth, Argon2 password hashing, Alembic migrations.
-- **Database:** PostgreSQL 16. The initial migration creates the 15 core tables for users, dietary preferences, restaurants, dishes, ingredients, dish ingredients, recipes, recipe ingredients, stores, products, store catalogue/prices, meal diary, shopping lists/items, and food-photo scan sessions.
-- **Food diary:** manual meal logging and daily calorie/macronutrient totals.
-- **Restaurant explorer:** restaurant/dish search, coordinates, map markers, and nearby lookup. The catalogue starts empty until data is imported.
-- **Recipes and groceries:** recipe and ingredient models/API, shopping lists, store/product/price models.
-- **AI food photo scan:** optional server-side OpenAI vision integration. The user must review/correct estimates before saving them to the diary. Requires `OPENAI_API_KEY`; without it the rest of the app still runs.
-- **Mobile:** Expo/React Native starter guide; the current runnable client is the web frontend.
-- **Tests:** API smoke test; API docs at `/docs`.
-
-**Data scope:** there is intentionally no fabricated bulk database of Łódź restaurants, Biedronka/Dino products or prices. The app supports importing your own catalogue JSON; example format is in `data/catalog.example.json`. The database starts with schema, not a large fake dataset. Real store/restaurant data needs a reliable source and should not be presented as live pricing without verification.
-
-## Start on Windows
-
-Requirements: Docker Desktop running, Docker Compose v2.
-
-1. Extract this ZIP into a new folder.
-2. Open CMD in the folder containing `docker-compose.yml`.
-3. Create local env file:
-   ```cmd
-   copy .env.example .env
-   ```
-4. Start the whole stack:
-   ```cmd
-   docker compose up --build
-   ```
-   First build may take several minutes while Docker downloads base images and installs dependencies.
-5. Open:
-   - Web UI: http://localhost:5173
-   - API docs: http://localhost:8000/docs
-   - API health: http://localhost:8000/health
-   - PostgreSQL port on host: `localhost:5434`
-
-Compose starts PostgreSQL, waits for its health check, applies Alembic migrations, starts FastAPI, waits for the API health check, then starts the web UI. The web service is called `web`, but its source folder is `frontend`; the API source folder is `backend`.
-
-## If Docker fails
-
-Run these from the project root and share the **first actual ERROR block** if it fails:
-
-```cmd
-docker compose config
-docker compose build --no-cache web
-docker compose build --no-cache api
-docker compose up
+```text
+Caduceus/
+├── backend/          # Python FastAPI backend
+├── frontend/         # React + TypeScript web application
+├── mobile/            # Expo + React Native mobile application
+├── data/              # Example catalogue data
+├── docker-compose.yml
+├── .env.example
+└── README.md
 ```
 
-The frontend uses pinned package versions rather than `latest` and a current Node base image/npm to avoid resolving an unpredictable dependency tree. Do not delete the PostgreSQL volume just to rebuild images.
+## Technologies
+
+- **Web:** React, TypeScript, Vite, Leaflet and OpenStreetMap.
+- **Mobile:** React Native, Expo SDK 58 and TypeScript.
+- **Navigation:** React Navigation native stack.
+- **API:** Python 3.12, FastAPI, Pydantic v2, SQLAlchemy 2, JWT authentication and Argon2 password hashing.
+- **Database:** PostgreSQL 16 with Alembic migrations.
+- **Mobile device features:** Expo Camera, Expo Font, Expo Image Picker and Expo Location.
+
+## Mobile application
+
+The native mobile application is located in `mobile/`. It is built with Expo and React Native and uses a screen-based navigation structure.
+
+### Running the mobile application
+
+Requirements:
+- Node.js and npm.
+- Expo Go on your mobile device, or an appropriate development build.
+
+Open a terminal in the project root and run:
+
+```bash
+cd mobile
+npm install
+npx expo start
+```
+
+Scan the QR code using Expo Go.
+
+If the local network connection does not work, try:
+
+```bash
+npx expo start --tunnel
+```
+
+### Mobile application flow
+
+The current application flow is:
+
+1. **Welcome** — introductory screen and entry point.
+2. **Registration** — username and password interface with local validation.
+3. **Preferences** — selection of dietary preferences.
+4. **Dashboard** — nutrition overview, water information and recent activity.
+5. **Camera** — camera permission handling, photo capture and preview.
+6. **Ingredient Entry** — manual recipe and ingredient input.
+7. **Macro Summary** — overview of calories and macronutrients.
+
+### Mobile source code
+
+| Location | Responsibility |
+|---|---|
+| `mobile/App.tsx` | Loads custom fonts and initializes navigation. |
+| `mobile/src/navigation/AppNavigator.tsx` | Registers application screens and navigation flow. |
+| `mobile/src/screens/` | Contains the application's individual screens. |
+| `mobile/src/components/` | Reusable buttons, inputs and preference components. |
+| `mobile/src/types/` | TypeScript types for navigation and nutrition data. |
+| `mobile/assets/fonts/` | Clash Display font files. |
+| `mobile/assets/images/` | Illustrations, icons and application images. |
+
+### Reusable components
+
+- `PrimaryButton` — general-purpose primary button.
+- `OffsetButton` — button with a decorative offset background.
+- `SaveRecipeButton` — recipe-saving button with a pressed state.
+- `PreferenceContinueButton` — button used on the dietary preferences screen.
+- `PreferencePill` — selectable dietary preference.
+- `PasswordInput` — password input with validation styling.
+- `IngredientInput` — ingredient entry field.
+
+### Current mobile implementation status
+
+Implemented:
+- Expo and React Native project setup.
+- Custom Clash Display fonts.
+- Welcome and registration screens.
+- Dietary preference selection.
+- Dashboard interface.
+- Camera permission handling and photo capture.
+- Manual recipe and ingredient entry interface.
+- Macro summary interface.
+- Reusable UI components.
+- Typed navigation.
+
+Still to integrate:
+- Backend authentication and registration.
+- Persistent user dietary preferences.
+- Actual nutrition calculations based on ingredient quantities.
+- Image-based food recognition.
+- Persistent recipe storage and synchronization with the backend.
+
+**Important:** The current Macro Summary uses sample nutrition values for preview purposes. It does not yet calculate real nutrition from the entered ingredients. Recipe saving is also not yet connected to persistent storage.
+
+## Web application
+
+The web application is located in `frontend/`.
+
+It uses React, TypeScript and Vite, with a responsive interface, Leaflet/OpenStreetMap integration and browser geolocation.
+
+For frontend-only development:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Use `VITE_API_URL` to configure the API address.
+
+## Backend API
+
+The API is located in `backend/` and uses:
+
+- Python 3.12.
+- FastAPI and Pydantic v2.
+- SQLAlchemy 2.
+- JWT authentication.
+- Argon2 password hashing.
+- Alembic database migrations.
+
+API documentation is available at `/docs` when the backend is running.
+
+## Database
+
+The project uses PostgreSQL 16.
+
+The initial migration creates 15 core tables covering:
+
+- Users and dietary preferences.
+- Restaurants and dishes.
+- Ingredients and dish ingredients.
+- Recipes and recipe ingredients.
+- Stores, products and catalogue prices.
+- Meal diary.
+- Shopping lists and shopping list items.
+- Food-photo scan sessions.
+
+The database starts with its schema rather than a fabricated bulk catalogue.
+
+## Running the full project on Windows
+
+Requirements: Docker Desktop running and Docker Compose v2.
+
+1. Open a terminal in the project root.
+2. Create the local environment file:
+
+```cmd
+copy .env.example .env
+```
+
+3. Start the application:
+
+```cmd
+docker compose up --build
+```
+
+The first build may take several minutes.
+
+Available services:
+
+- Web UI: http://localhost:5173
+- API documentation: http://localhost:8000/docs
+- API health: http://localhost:8000/health
+- PostgreSQL: localhost:5434
+
+Compose starts PostgreSQL, applies Alembic migrations, starts FastAPI and then starts the web application.
+
+## AI food photo scan
+
+The backend supports optional OpenAI vision integration.
+
+To enable it, configure `OPENAI_API_KEY` in `.env`. The key must remain on the backend and must never be placed in frontend or mobile source code.
+
+The authenticated endpoint is:
+
+`POST /food-scan/analyze`
+
+The user should review and correct estimates before confirming them through:
+
+`POST /food-scan/{scan_id}/confirm`
+
+Accepted image types: JPEG, PNG and WebP. Maximum image size: 8 MB.
+
+Nutrition estimates are not medical advice or exact measurements.
+
+## Data catalogue
+
+See `data/README.md` for catalogue import instructions.
+
+The project does not include fabricated restaurant data for Łódź or unverified store prices. Catalogue data should come from reliable sources and should not be presented as live pricing without verification.
 
 ## Data persistence and reset
 
-- `docker compose down` stops/removes containers but preserves the named PostgreSQL volume.
-- `docker compose down -v` deletes the database volume and all data. Only use this if you explicitly want a database reset.
-- To inspect logs: `docker compose logs -f api`, `docker compose logs -f web`, `docker compose logs -f db`.
+- `docker compose down` stops containers but preserves the PostgreSQL volume.
+- `docker compose down -v` deletes the database volume and its data.
+- `docker compose logs -f api` displays API logs.
+- `docker compose logs -f web` displays web application logs.
+- `docker compose logs -f db` displays database logs.
 
-## AI photo scan setup
+Do not delete the PostgreSQL volume simply to rebuild application images.
 
-Open `.env` and set `OPENAI_API_KEY` to your own key. The key is read only by the backend; do not put it in frontend source. Rebuild/restart the API after changing env:
+## Future development
 
-```cmd
-docker compose up --build -d api
-```
+Potential next stages include:
 
-Authenticated endpoint: `POST /food-scan/analyze` (multipart form field `image`), then review the estimate and submit corrections to `POST /food-scan/{scan_id}/confirm`. Accepted image types: JPEG, PNG, WebP; maximum 8 MB. Estimates are not medical advice or exact nutrition measurements.
+- Connecting mobile registration and authentication to the backend.
+- Real nutrition calculation using ingredient data.
+- AI-powered food recognition.
+- Recipe storage and meal diary synchronization.
+- Persistent user preferences.
+- Verified restaurant and grocery catalogues.
+- Production deployment, HTTPS, backups and monitoring.
 
-## Importing catalogue data
-
-See `data/README.md`. The import endpoint is authenticated. Use stable unique `code` fields and test imports with a small file first. Do not upload untrusted JSON.
-
-## Run backend outside Docker
-
-Use Python 3.12 and a reachable PostgreSQL instance. In Windows CMD:
-
-```cmd
-cd backend
-py -m venv .venv
-.venv\Scripts\activate
-py -m pip install -r requirements.txt
-set DATABASE_URL=postgresql+psycopg://caduceus:change_me_local@localhost:5434/caduceus
-set SECRET_KEY=replace_this_with_a_long_random_secret
-py -m alembic upgrade head
-py -m uvicorn app.main:app --reload
-```
-
-For frontend-only development, run `npm install` then `npm run dev` from `frontend`. Use `VITE_API_URL` to point at the API.
-
-## Current scope and next stages
-
-The base application is implemented as a runnable starter, not a fully populated production service. Next stages can add a vetted Łódź restaurant dataset, verified store/product prices, richer recipe costing (used quantity vs whole pack), pgvector/RAG, Redis/Celery, mobile app screens, and production deployment with HTTPS, backups, rate limiting and monitoring. pgvector is deliberately not enabled in the initial migration, so a plain PostgreSQL 16 image works out of the box.
-S
+The web, mobile and backend applications are separate parts of the same Caduceus project.

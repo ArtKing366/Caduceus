@@ -1,3 +1,4 @@
+
 # Secrets and environment
 .env
 .env.*
@@ -35,3 +36,6 @@ dist/
 *.log
 *.sqlite3
 uploads/
+
+# Node.js dependencies
+node_modules/
