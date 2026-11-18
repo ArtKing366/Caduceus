@@ -110,6 +110,18 @@ type CatalogEntry = {
   available: boolean;
 };
 
+type FoodSuggestion = {
+  key: string;
+  name: string;
+  source: 'Product' | 'Dish';
+  category: string;
+  baseGrams: number;
+  calories: number | null;
+  protein: number | null;
+  fat: number | null;
+  carbs: number | null;
+};
+
 const icon = new L.Icon({
   iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
   iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
@@ -209,6 +221,12 @@ export default function App() {
     ...(isForm ? {} : { 'Content-Type': 'application/json' }),
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   });
+
+  const [mealGrams, setMealGrams] = useState('100');
+  const [mealSuggestions, setMealSuggestions] = useState<FoodSuggestion[]>([]);
+  const [loadingMealSuggestions, setLoadingMealSuggestions] = useState(false);
+  const [showMealSuggestions, setShowMealSuggestions] = useState(false);
+  const [selectedSuggestion, setSelectedSuggestion] = useState<FoodSuggestion | null>(null);
 
   async function request(path: string, init: RequestInit = {}) {
     const isForm = init.body instanceof URLSearchParams || init.body instanceof FormData;
@@ -607,6 +625,106 @@ export default function App() {
       { enableHighAccuracy: true, timeout: 10000 }
     );
   }
+  function calcMacro(baseVal: number | null, baseGrams: number, targetGrams: number, decimals = 1) {
+    if (baseVal === null || !baseGrams) return '';
+    const scaled = (baseVal * targetGrams) / baseGrams;
+    const factor = Math.pow(10, decimals);
+    return String(Math.round(scaled * factor) / factor);
+  }
+
+  function applyFoodSuggestion(item: FoodSuggestion) {
+    const initialGrams = item.source === 'Dish' ? item.baseGrams : Number(mealGrams) > 0 ? Number(mealGrams) : 100;
+    setSelectedSuggestion(item);
+    setMealName(item.name);
+    setMealGrams(String(initialGrams));
+    setMealCalories(calcMacro(item.calories, item.baseGrams, initialGrams, 0));
+    setMealProtein(calcMacro(item.protein, item.baseGrams, initialGrams, 1));
+    setMealFat(calcMacro(item.fat, item.baseGrams, initialGrams, 1));
+    setMealCarbs(calcMacro(item.carbs, item.baseGrams, initialGrams, 1));
+    setShowMealSuggestions(false);
+  }
+
+  function handleMealGramsChange(nextValue: string) {
+    setMealGrams(nextValue);
+    const grams = Number(nextValue);
+    if (selectedSuggestion && grams > 0) {
+      setMealCalories(calcMacro(selectedSuggestion.calories, selectedSuggestion.baseGrams, grams, 0));
+      setMealProtein(calcMacro(selectedSuggestion.protein, selectedSuggestion.baseGrams, grams, 1));
+      setMealFat(calcMacro(selectedSuggestion.fat, selectedSuggestion.baseGrams, grams, 1));
+      setMealCarbs(calcMacro(selectedSuggestion.carbs, selectedSuggestion.baseGrams, grams, 1));
+    }
+  }
+
+  useEffect(() => {
+    if (view !== 'diary') return;
+    const query = mealName.trim();
+
+    if (query.length < 2 || (selectedSuggestion && selectedSuggestion.name === mealName)) {
+      setMealSuggestions([]);
+      setShowMealSuggestions(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setLoadingMealSuggestions(true);
+      try {
+        const productsEndpoint = discoveredEndpoints.productsPath || discoveredEndpoints.storeItemsPath;
+        const [productsRaw, dishesRaw] = await Promise.all([
+          productsEndpoint
+            ? request(`${productsEndpoint}?q=${encodeURIComponent(query)}&limit=40`).catch(() => [])
+            : Promise.resolve([]),
+          request(`/dishes?q=${encodeURIComponent(query)}`).catch(() => []),
+        ]);
+
+        const byName = new Map<string, FoodSuggestion>();
+
+        for (const row of extractList<any>(productsRaw)) {
+          const prod = row.product || row;
+          const name: string = (prod.name || row.product_name || row.name || '').trim();
+          if (!name) continue;
+          const normKey = `prod:${name.toLowerCase()}`;
+          const candidate: FoodSuggestion = {
+            key: normKey,
+            name,
+            source: 'Product',
+            category: prod.category || row.category || 'Product',
+            baseGrams: 100,
+            calories: prod.calories_per_100 ?? null,
+            protein: prod.protein_per_100 ?? null,
+            fat: prod.fat_per_100 ?? null,
+            carbs: prod.carbs_per_100 ?? null,
+          };
+          const existing = byName.get(normKey);
+          if (!existing || (existing.calories === null && candidate.calories !== null)) {
+            byName.set(normKey, candidate);
+          }
+        }
+
+        for (const dish of extractList<Dish>(dishesRaw).slice(0, 8)) {
+          const dishKey = `dish:${dish.id}`;
+          byName.set(dishKey, {
+            key: dishKey,
+            name: dish.name,
+            source: 'Dish',
+            category: dish.category || 'Dish',
+            baseGrams: dish.serving_grams || 100,
+            calories: dish.calories ?? null,
+            protein: dish.protein ?? null,
+            fat: dish.fat ?? null,
+            carbs: dish.carbs ?? null,
+          });
+        }
+
+        const results = Array.from(byName.values()).slice(0, 12);
+        setMealSuggestions(results);
+        setShowMealSuggestions(results.length > 0);
+      } finally {
+        setLoadingMealSuggestions(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [view, mealName, selectedSuggestion, discoveredEndpoints]);
 
   async function addMeal() {
     try {
@@ -614,6 +732,7 @@ export default function App() {
         method: 'POST',
         body: JSON.stringify({
           name: mealName,
+          serving_grams: Number(mealGrams || 100),
           calories: Number(mealCalories || 0),
           protein: Number(mealProtein || 0),
           fat: Number(mealFat || 0),
@@ -622,10 +741,14 @@ export default function App() {
         }),
       });
       setMealName('');
+      setMealGrams('100');
       setMealCalories('');
       setMealProtein('');
       setMealFat('');
       setMealCarbs('');
+      setSelectedSuggestion(null);
+      setMealSuggestions([]);
+      setShowMealSuggestions(false);
       await loadDiary();
     } catch (e) {
       setNotice(String(e));
@@ -1005,7 +1128,104 @@ export default function App() {
                 <Plus size={18} /> Add meal manually
               </h2>
               <div className="meal-form">
-                <input placeholder="Meal name" value={mealName} onChange={(e) => setMealName(e.target.value)} />
+                <div style={{ position: 'relative', flex: '2 1 240px' }}>
+                  <input
+                    style={{ width: '100%' }}
+                    placeholder="Meal name (e.g. chleb, płatki, kurczak...)"
+                    value={mealName}
+                    onFocus={() => {
+                      if (mealSuggestions.length > 0) setShowMealSuggestions(true);
+                    }}
+                    onBlur={() => {
+                      setTimeout(() => setShowMealSuggestions(false), 150);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Escape') setShowMealSuggestions(false);
+                    }}
+                    onChange={(e) => {
+                      setMealName(e.target.value);
+                      if (selectedSuggestion) setSelectedSuggestion(null);
+                    }}
+                  />
+
+                  {loadingMealSuggestions && (
+                    <small
+                      style={{
+                        position: 'absolute',
+                        right: 10,
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        color: '#6b7280',
+                        fontSize: 12,
+                      }}
+                    >
+                      Searching...
+                    </small>
+                  )}
+
+                  {showMealSuggestions && mealSuggestions.length > 0 && (
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: 'calc(100% + 6px)',
+                        left: 0,
+                        right: 0,
+                        zIndex: 1000,
+                        background: '#ffffff',
+                        border: '1px solid #d7ded9',
+                        borderRadius: 12,
+                        boxShadow: '0 10px 28px rgba(15, 23, 42, 0.12)',
+                        maxHeight: 280,
+                        overflowY: 'auto',
+                      }}
+                    >
+                      {mealSuggestions.map((item) => (
+                        <div
+                          key={item.key}
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            applyFoodSuggestion(item);
+                          }}
+                          style={{
+                            padding: '10px 14px',
+                            borderBottom: '1px solid #f1f5f9',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            gap: 12,
+                          }}
+                        >
+                          <div>
+                            <div style={{ fontWeight: 600, fontSize: 14 }}>{item.name}</div>
+                            <small style={{ color: '#64748b' }}>
+                              {item.source} · {item.category} · per {item.baseGrams}g
+                            </small>
+                          </div>
+                          <div style={{ textAlign: 'right', fontSize: 12, whiteSpace: 'nowrap' }}>
+                            {item.calories !== null ? (
+                              <>
+                                <b>{Math.round(item.calories)} kcal</b>
+                                <div style={{ color: '#64748b' }}>
+                                  P {item.protein ?? 0}g · F {item.fat ?? 0}g · C {item.carbs ?? 0}g
+                                </div>
+                              </>
+                            ) : (
+                              <span style={{ color: '#94a3b8' }}>No macros</span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <input
+                  placeholder="Grams"
+                  type="number"
+                  value={mealGrams}
+                  onChange={(e) => handleMealGramsChange(e.target.value)}
+                />
                 <input
                   placeholder="kcal"
                   type="number"
@@ -1018,7 +1238,12 @@ export default function App() {
                   value={mealProtein}
                   onChange={(e) => setMealProtein(e.target.value)}
                 />
-                <input placeholder="Fat g" type="number" value={mealFat} onChange={(e) => setMealFat(e.target.value)} />
+                <input
+                  placeholder="Fat g"
+                  type="number"
+                  value={mealFat}
+                  onChange={(e) => setMealFat(e.target.value)}
+                />
                 <input
                   placeholder="Carbs g"
                   type="number"
