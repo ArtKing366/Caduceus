@@ -42,3 +42,4 @@ uploads/
 node_modules/
 
 data/*_catalog.json
+backend/data/*_catalog.json
