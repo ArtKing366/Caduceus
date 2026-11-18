@@ -929,7 +929,6 @@ export default function App() {
               <select value={category} onChange={(e) => setCategory(e.target.value)}>
                 <option value="">All categories</option>
                 <option value="healthy">Healthy</option>
-                <option value="vegetarian">Vegetarian</option>
                 <option value="polish">Polish</option>
                 <option value="asian">Asian</option>
                 <option value="italian">Italian</option>
